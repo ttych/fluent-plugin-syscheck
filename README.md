@@ -32,8 +32,29 @@ $ bundle
 
 ### configuration
 
+Parameters are:
+
+| parameter         | type   | purpose                                  |
+|-------------------|--------|------------------------------------------|
+| tag               | string | tag to emit event on                     |
+| interval          | time   | interval to exec mount check             |
+| timeout           | time   | timeout for a mountpoint check           |
+| enabled_fs_types  | array  | list of fstype to enable only            |
+| disabled_fs_types | array  | list of fstype to disable explicitly     |
+| error_only        | bool   | generate event on mount check error only |
+
 ### examples
 
+``` text
+<source>
+  @type syscheck_mounts
+
+  tag test
+  interval 10
+  enabled_fs_types zfs, xfs
+  error_only false
+</source>
+```
 
 ## Copyright
 
