@@ -36,7 +36,7 @@ module Fluent
       desc 'interval for probe execution'
       config_param :interval, :time, default: INTERVAL
       desc 'The timeout in second for the check execution'
-      config_param :timeout, :integer, default: TIMEOUT
+      config_param :timeout, :time, default: TIMEOUT
 
       ENABLED_FS_TYPE = nil
       DISABLED_FS_TYPE = %w[sysfs proc devpts bpf devtmpfs debugfs tracefs binfmt_misc
