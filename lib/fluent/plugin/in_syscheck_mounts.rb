@@ -122,8 +122,9 @@ module Fluent
           tag,
           Fluent::Engine.now,
           {
-            mountpoint: mountpoint,
-            fstype: fstype,
+            device: mount.device,
+            mountpoint: mount.mountpoint,
+            fstype: mount.fstype,
             status: status
           }
         )

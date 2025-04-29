@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_development_dependency 'bump', '~> 0.10'
-  spec.add_development_dependency 'bundler', '~> 2.6', '>= 2.6.5'
+  spec.add_development_dependency 'bundler', '~> 2.5', '>= 2.5.9'
   spec.add_development_dependency 'byebug', '~> 11.1', '>= 11.1.3'
   spec.add_development_dependency 'mocha', '~> 2.7', '>= 2.7.1'
   spec.add_development_dependency 'rake', '~> 13.2', '>= 13.2.1'
