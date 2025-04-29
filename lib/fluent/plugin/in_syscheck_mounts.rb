@@ -40,12 +40,18 @@ module Fluent
 
       ENABLED_FS_TYPE = nil
       DISABLED_FS_TYPE = %w[sysfs proc devpts bpf devtmpfs debugfs tracefs binfmt_misc
-                            efivarfs cgroup cgroup2 securityfs configfs fusectl mqueue].freeze
+                            efivarfs cgroup cgroup2 securityfs configfs fusectl mqueue
+                            pstore hugetlbfs].freeze
 
       desc 'Enabled FS types'
       config_param :enabled_fs_types, :array, value_type: :string, default: ENABLED_FS_TYPE
       desc 'Disabled FS types'
       config_param :disabled_fs_types, :array, value_type: :string, default: DISABLED_FS_TYPE
+
+      ERROR_ONLY = true
+
+      desc 'Error event only'
+      config_param :error_only, :bool, default: ERROR_ONLY
 
       def configure(conf)
         super
@@ -91,7 +97,7 @@ module Fluent
           File.stat(mount.mountpoint)
           writer.puts 'ok'
         rescue StandardError => e
-          writer.puts "error: #{e.class}: #{e.message}"
+          writer.puts e.message
         ensure
           writer.close
           exit! 0
@@ -110,23 +116,20 @@ module Fluent
           reader.close rescue nil
           Process.wait(pid) rescue nil
         end
-        result
+        SysMountStatus.new(result)
       end
+
+
 
       def emit_mount_status(mount, status)
         log.debug "#{mount.mountpoint} (#{mount.fstype}): status - #{status}"
 
-        return if status.strip == 'ok'
+        return if error_only && status.success?
 
         router.emit(
           tag,
           Fluent::Engine.now,
-          {
-            device: mount.device,
-            mountpoint: mount.mountpoint,
-            fstype: mount.fstype,
-            status: status
-          }
+          mount.to_h.merge(status.to_h)
         )
       end
 
@@ -137,6 +140,39 @@ module Fluent
           @device = device
           @mountpoint = mountpoint
           @fstype = fstype
+        end
+
+        def to_h
+          {
+            'device' => device,
+            'mountpoint' => mountpoint,
+            'fstype' => fstype
+          }
+        end
+      end
+
+      class SysMountStatus
+        OK_STATUS_MSG = 'ok'
+
+        def initialize(initial_msg)
+          @initial_msg = initial_msg
+        end
+
+        def success?
+          @initial_msg == OK_STATUS_MSG
+        end
+
+        def error
+          return if success?
+
+          @initial_msg
+        end
+
+        def to_h
+          {
+            'mountpoint_healthy' => success?,
+            'mountpoint_error' => error
+          }.compact
         end
       end
     end
