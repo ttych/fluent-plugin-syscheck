@@ -15,11 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'ostruct'
-
 require 'fluent/plugin/input'
 
-# rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+# rubocop:disable Metrics/AbcSize, Metrics/ClassLength, Metrics/MethodLength
 module Fluent
   module Plugin
     class SyscheckMountsInput < Fluent::Plugin::Input
@@ -38,15 +36,41 @@ module Fluent
       desc 'The timeout in second for the check execution'
       config_param :timeout, :time, default: TIMEOUT
 
-      ENABLED_FS_TYPE = nil
-      DISABLED_FS_TYPE = %w[sysfs proc devpts bpf devtmpfs debugfs tracefs binfmt_misc
-                            efivarfs cgroup cgroup2 securityfs configfs fusectl mqueue
-                            pstore hugetlbfs].freeze
+      ENABLED_FS_TYPES = nil
+      DISABLED_FS_TYPES = %w[
+        binfmt_misc
+        bpf
+        cgroup
+        cgroup2
+        configfs
+        debugfs
+        devpts
+        devtmpfs
+        efivarfs
+        fusectl
+        hugetlbfs
+        mqueue
+        proc
+        pstore
+        rpc_pipefs
+        securityfs
+        squashfs
+        sysfs
+        tracefs
+      ].freeze
 
       desc 'Enabled FS types'
-      config_param :enabled_fs_types, :array, value_type: :string, default: ENABLED_FS_TYPE
+      config_param :enabled_fs_types, :array, value_type: :string, default: ENABLED_FS_TYPES
       desc 'Disabled FS types'
-      config_param :disabled_fs_types, :array, value_type: :string, default: DISABLED_FS_TYPE
+      config_param :disabled_fs_types, :array, value_type: :string, default: DISABLED_FS_TYPES
+
+      ENABLED_PATHS = nil
+      DISABLED_PATHS = [].freeze
+
+      desc 'Enabled Paths'
+      config_param :enabled_paths, :array, value_type: :regexp, default: ENABLED_PATHS
+      desc 'Disabled Paths'
+      config_param :disabled_paths, :array, value_type: :regexp, default: DISABLED_PATHS
 
       ERROR_ONLY = true
 
@@ -82,11 +106,33 @@ module Fluent
       def system_mounts
         File.readlines('/proc/mounts').map do |mount_line|
           device, mountpoint, fstype, _rest = mount_line.split
-          next if enabled_fs_types && !enabled_fs_types.include?(fstype)
-          next if disabled_fs_types&.include?(fstype)
+          next unless enabled_fs_type?(fstype)
+          next if disabled_fs_type?(fstype)
+          next unless enabled_path?(mountpoint)
+          next if disabled_path?(mountpoint)
 
           SysMount.new(device: device, mountpoint: mountpoint, fstype: fstype)
         end.compact
+      end
+
+      def enabled_fs_type?(fstype)
+        return true unless enabled_fs_types
+
+        enabled_fs_types.include?(fstype)
+      end
+
+      def disabled_fs_type?(fstype)
+        disabled_fs_types&.include?(fstype)
+      end
+
+      def enabled_path?(path)
+        return true unless enabled_paths
+
+        enabled_paths.any? { |path_pattern| path_pattern.match?(path) }
+      end
+
+      def disabled_path?(path)
+        disabled_paths.any? { |path_pattern| path_pattern.match?(path) }
       end
 
       def stat_async(mount)
@@ -118,8 +164,6 @@ module Fluent
         end
         SysMountStatus.new(result)
       end
-
-
 
       def emit_mount_status(mount, status)
         log.debug "#{mount.mountpoint} (#{mount.fstype}): status - #{status}"
@@ -178,4 +222,4 @@ module Fluent
     end
   end
 end
-# rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+# rubocop:enable Metrics/AbcSize, Metrics/ClassLength, Metrics/MethodLength

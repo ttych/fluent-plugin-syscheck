@@ -3,6 +3,7 @@
 require 'tmpdir'
 
 require 'helper'
+
 require 'fluent/plugin/in_syscheck_mounts'
 
 class SyscheckInputTest < Test::Unit::TestCase
@@ -28,9 +29,164 @@ class SyscheckInputTest < Test::Unit::TestCase
       assert_equal Fluent::Plugin::SyscheckMountsInput::TIMEOUT, input.timeout
 
       assert_equal nil, input.enabled_fs_types
-      assert_equal Fluent::Plugin::SyscheckMountsInput::DISABLED_FS_TYPE, input.disabled_fs_types
+      assert_equal Fluent::Plugin::SyscheckMountsInput::DISABLED_FS_TYPES, input.disabled_fs_types
+
+      assert_equal nil, input.enabled_paths
+      assert_equal [], input.disabled_paths
 
       assert_equal Fluent::Plugin::SyscheckMountsInput::ERROR_ONLY, input.error_only
+    end
+  end
+
+  sub_test_case 'mountpoints' do
+    test 'without filtering' do
+      fluentd_conf = %(
+        tag test
+        disabled_fs_types []
+      )
+      proc_mounts = [
+        "/dev/sda / ext4 rw,relatime 0 0\n",
+        "tmpfs /run tmpfs rw,nosuid,nodev 0 0\n",
+        "devpts /dev/pts devpts rw 0 0\n"
+      ]
+      File.expects(:readlines).with('/proc/mounts').returns(proc_mounts)
+
+      driver = create_driver(fluentd_conf)
+      input = driver.instance
+
+      mounts = input.system_mounts
+
+      expected_mounts = [
+        { 'device' => '/dev/sda',
+          'mountpoint' => '/',
+          'fstype' => 'ext4' },
+        {  'device' => 'tmpfs',
+           'mountpoint' => '/run',
+           'fstype' => 'tmpfs' },
+        {  'device' => 'devpts',
+           'mountpoint' => '/dev/pts',
+           'fstype' => 'devpts' }
+      ]
+      assert_equal expected_mounts, mounts.map(&:to_h)
+    end
+
+    test 'enabled_fs_types' do
+      fluentd_conf = %(
+        tag test
+        enabled_fs_types ext4,vfat
+        disabled_fs_types []
+      )
+      proc_mounts = [
+        "/dev/sda / ext4 rw,relatime 0 0\n",
+        "/dev/sdb /boot/efi vfat rw,relatime 0 0\n",
+        "tmpfs /run tmpfs rw,nosuid,nodev 0 0\n",
+        "devpts /dev/pts devpts rw 0 0\n"
+      ]
+      File.expects(:readlines).with('/proc/mounts').returns(proc_mounts)
+
+      driver = create_driver(fluentd_conf)
+      input = driver.instance
+
+      mounts = input.system_mounts
+
+      expected_mounts = [
+        { 'device' => '/dev/sda',
+          'mountpoint' => '/',
+          'fstype' => 'ext4' },
+        {            'device' => '/dev/sdb',
+                     'mountpoint' => '/boot/efi',
+                     'fstype' => 'vfat' }
+      ]
+      assert_equal expected_mounts, mounts.map(&:to_h)
+    end
+
+    test 'disabled_fs_types' do
+      fluentd_conf = %(
+        tag test
+        disabled_fs_types devpts,vfat
+      )
+      proc_mounts = [
+        "/dev/sda / ext4 rw,relatime 0 0\n",
+        "/dev/sdb /boot/efi vfat rw,relatime 0 0\n",
+        "tmpfs /run tmpfs rw,nosuid,nodev 0 0\n",
+        "devpts /dev/pts devpts rw 0 0\n"
+      ]
+      File.expects(:readlines).with('/proc/mounts').returns(proc_mounts)
+
+      driver = create_driver(fluentd_conf)
+      input = driver.instance
+
+      mounts = input.system_mounts
+
+      expected_mounts = [
+        { 'device' => '/dev/sda',
+          'mountpoint' => '/',
+          'fstype' => 'ext4' },
+        {            'device' => 'tmpfs',
+                     'mountpoint' => '/run',
+                     'fstype' => 'tmpfs' }
+      ]
+      assert_equal expected_mounts, mounts.map(&:to_h)
+    end
+
+    test 'enabled_paths' do
+      fluentd_conf = %(
+        tag test
+        disabled_fs_types []
+        enabled_paths /^/$/, /^/boot/
+      )
+      proc_mounts = [
+        "/dev/sda / ext4 rw,relatime 0 0\n",
+        "/dev/sdb /boot/efi vfat rw,relatime 0 0\n",
+        "tmpfs /run tmpfs rw,nosuid,nodev 0 0\n",
+        "devpts /dev/pts devpts rw 0 0\n"
+      ]
+      File.expects(:readlines).with('/proc/mounts').returns(proc_mounts)
+
+      driver = create_driver(fluentd_conf)
+      input = driver.instance
+
+      mounts = input.system_mounts
+
+      expected_mounts = [
+        { 'device' => '/dev/sda',
+          'mountpoint' => '/',
+          'fstype' => 'ext4' },
+        {            'device' => '/dev/sdb',
+                     'mountpoint' => '/boot/efi',
+                     'fstype' => 'vfat' }
+      ]
+      assert_equal expected_mounts, mounts.map(&:to_h)
+    end
+
+    test 'disabled_paths' do
+      fluentd_conf = %(
+        tag test
+        disabled_fs_types []
+        disabled_paths /^/run/, /^/dev/
+      )
+      proc_mounts = [
+        "/dev/sda / ext4 rw,relatime 0 0\n",
+        "/dev/sdb /boot/efi vfat rw,relatime 0 0\n",
+        "tmpfs /run tmpfs rw,nosuid,nodev 0 0\n",
+        "devpts /dev/pts devpts rw 0 0\n"
+      ]
+      File.expects(:readlines).with('/proc/mounts').returns(proc_mounts)
+
+      driver = create_driver(fluentd_conf)
+      input = driver.instance
+
+      mounts = input.system_mounts
+
+      expected_mounts = [
+        { 'device' => '/dev/sda',
+          'mountpoint' => '/',
+          'fstype' => 'ext4' },
+        {            'device' => '/dev/sdb',
+                     'mountpoint' => '/boot/efi',
+                     'fstype' => 'vfat' }
+      ]
+      assert_equal expected_mounts, mounts.map(&:to_h)
     end
   end
 
