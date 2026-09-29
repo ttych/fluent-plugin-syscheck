@@ -7,7 +7,7 @@ SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter.new(
 )
 
 SimpleCov.start do
-  add_filter '/test/'
+  skip '/test/'
 end
 
 require 'test-unit'

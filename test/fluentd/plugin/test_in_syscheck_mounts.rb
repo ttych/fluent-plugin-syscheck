@@ -60,12 +60,12 @@ class SyscheckInputTest < Test::Unit::TestCase
         { 'device' => '/dev/sda',
           'mountpoint' => '/',
           'fstype' => 'ext4' },
-        {  'device' => 'tmpfs',
-           'mountpoint' => '/run',
-           'fstype' => 'tmpfs' },
-        {  'device' => 'devpts',
-           'mountpoint' => '/dev/pts',
-           'fstype' => 'devpts' }
+        { 'device' => 'tmpfs',
+          'mountpoint' => '/run',
+          'fstype' => 'tmpfs' },
+        { 'device' => 'devpts',
+          'mountpoint' => '/dev/pts',
+          'fstype' => 'devpts' }
       ]
       assert_equal expected_mounts, mounts.map(&:to_h)
     end

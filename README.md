@@ -56,8 +56,20 @@ Parameters are:
 </source>
 ```
 
+## plugin : syscheck_tcp
+
+### configuration
+
+Parameters are:
+
+### examples
+
+``` text
+
+```
+
 ## Copyright
 
-* Copyright(c) 2025- Thomas Tych
+* Copyright(c) 2025-2026 Thomas Tych
 * License
   * Apache License, Version 2.0

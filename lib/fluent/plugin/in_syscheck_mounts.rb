@@ -17,7 +17,7 @@
 
 require 'fluent/plugin/input'
 
-# rubocop:disable Metrics/AbcSize, Metrics/ClassLength, Metrics/MethodLength
+# rubocop:disable-next Metrics/AbcSize, Metrics/ClassLength, Metrics/MethodLength
 module Fluent
   module Plugin
     class SyscheckMountsInput < Fluent::Plugin::Input
@@ -80,9 +80,7 @@ module Fluent
       def configure(conf)
         super
 
-        raise Fluent::ConfigError, 'tag should not be empty' if tag.empty?
-
-        true
+        raise Fluent::ConfigError, 'tag should not be empty' if tag.nil? || tag.empty?
       end
 
       def start
@@ -222,4 +220,3 @@ module Fluent
     end
   end
 end
-# rubocop:enable Metrics/AbcSize, Metrics/ClassLength, Metrics/MethodLength
