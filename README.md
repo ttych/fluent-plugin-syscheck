@@ -56,16 +56,30 @@ Parameters are:
 </source>
 ```
 
-## plugin : syscheck_tcp
+## plugin : syscheck_sockets
 
 ### configuration
 
 Parameters are:
 
+| parameter               | type   | purpose                                      |
+|-------------------------|--------|----------------------------------------------|
+| tag                     | string | tag to emit event on                         |
+| interval                | time   | interval to exec mount check                 |
+| first_run_wait_interval | bool   | first collect wait interval before execution |
+| list_sockets            | bool   | dump sockets information                     |
+
 ### examples
 
 ``` text
+<source>
+  @type syscheck_sockets
 
+  tag test
+  interval 60
+  first_run_wait_interval false
+  list_sockets true
+</source>
 ```
 
 ## Copyright
